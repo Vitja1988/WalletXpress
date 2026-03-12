@@ -1,0 +1,65 @@
+# WalletXpress Konfiguration
+# Nur für eigene Wallets!
+
+# Quell-Wallets (die geleert werden)
+source_wallets:
+  - name: "Wallet 1"
+    address: ""  # Deine Wallet-Adresse
+    encrypted_key: ""  # Wird verschlüsselt gespeichert
+    chains:
+      - ethereum
+      - bsc
+      - polygon
+      - arbitrum
+      - optimism
+      - avalanche
+  
+  - name: "Wallet 2"
+    address: ""
+    encrypted_key: ""
+    chains:
+      - ethereum
+      - bsc
+
+# Ziel-Wallet (Haupt-Wallet)
+target_wallet:
+  address: ""  # Deine Haupt-Wallet-Adresse
+
+# Einstellungen
+settings:
+  # Mindestwert für Transfer (in USD)
+  # Kleinere Beträge werden ignoriert (lohnt nicht für Gas)
+  min_transfer_value: 5.0
+  
+  # Maximale Gas-Kosten als % vom Transfer-Wert
+  max_gas_cost_percent: 10
+  
+  # Dry-Run Mode: True = nur simulieren, False = wirklich senden
+  dry_run: true
+  
+  # Gas-Limit Multiplikator (1.2 = 20% Puffer)
+  gas_limit_multiplier: 1.2
+  
+  # Chains aktivieren/deaktivieren
+  enabled_chains:
+    - ethereum
+    - bsc
+    - polygon
+    - arbitrum
+    - optimism
+    - avalanche
+    - base
+    
+  # Token-Blacklist (die nicht transferiert werden sollen)
+  token_blacklist:
+    - "0x..."  # Scam Token etc.
+
+# RPC Endpoints (kannst du eigene Infura/Alchemy Keys eintragen)
+rpc_endpoints:
+  ethereum: "https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY"
+  bsc: "https://bsc-dataseed.binance.org/"
+  polygon: "https://polygon-mainnet.g.alchemy.com/v2/YOUR_KEY"
+  arbitrum: "https://arb-mainnet.g.alchemy.com/v2/YOUR_KEY"
+  optimism: "https://opt-mainnet.g.alchemy.com/v2/YOUR_KEY"
+  avalanche: "https://api.avax.network/ext/bc/C/rpc"
+  base: "https://mainnet.base.org/"
