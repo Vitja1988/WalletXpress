@@ -4,27 +4,9 @@ Scannt alle Balances auf Source-Wallets
 """
 
 import yaml
-import json
 from typing import Dict, List, Optional
-from dataclasses import dataclass
 from decimal import Decimal
-
-@dataclass
-class TokenBalance:
-    symbol: str
-    address: str  # "native" für ETH/MATIC/etc.
-    balance: Decimal
-    decimals: int
-    value_usd: Optional[Decimal] = None
-    
-@dataclass
-class WalletScan:
-    wallet_name: str
-    address: str
-    chain: str
-    native_balance: TokenBalance
-    tokens: List[TokenBalance]
-    total_value_usd: Decimal
+from src.chains import TokenBalance, WalletScan, fetch_native_prices
 
 class WalletScanner:
     def __init__(self, config_path: str = "config.yaml"):
@@ -37,19 +19,22 @@ class WalletScanner:
     def scan_all_wallets(self) -> Dict[str, List[WalletScan]]:
         """Scannt alle konfigurierten Source-Wallets"""
         results = {}
-        
+
+        # Native-Preise für alle aktiven Chains vorab laden (ein API-Call)
+        fetch_native_prices(self.enabled_chains)
+
         for wallet_config in self.config['source_wallets']:
             wallet_address = wallet_config['address']
             wallet_name = wallet_config.get('name', 'Unnamed')
-            
+
             print(f"\n🔍 Scanne {wallet_name} ({wallet_address[:6]}...{wallet_address[-4:]})")
-            
+
             for chain in wallet_config['chains']:
                 if chain not in self.enabled_chains:
                     continue
-                    
-                print(f"  └─ Chain: {chain.upper()}", end=" ")
-                
+
+                print(f"  └─ Chain: {chain.upper()}", end=" ", flush=True)
+
                 try:
                     scan_result = self.scan_wallet_on_chain(
                         wallet_name, wallet_address, chain
@@ -60,8 +45,8 @@ class WalletScanner:
                     else:
                         print("❌ Fehler")
                 except Exception as e:
-                    print(f"❌ {str(e)[:50]}")
-                    
+                    print(f"❌ {str(e)[:70]}")
+
         return results
     
     def scan_wallet_on_chain(self, wallet_name: str, address: str, chain: str) -> Optional[WalletScan]:
@@ -120,28 +105,34 @@ class WalletScanner:
     def print_scan_summary(self, scans: Dict[str, List[WalletScan]]):
         """Gibt eine Zusammenfassung der Scans aus"""
         from tabulate import tabulate
-        
+
         print("\n" + "="*80)
         print("📊 SCAN-ERGEBNIS")
         print("="*80)
-        
+
         table_data = []
         total_value = Decimal('0')
-        
+
         for address, chain_scans in scans.items():
             for scan in chain_scans:
+                native = scan.native_balance
+                token_str = ', '.join(
+                    f"{t.symbol} ({t.balance:.4f})"
+                    for t in scan.tokens if t.balance > 0
+                ) or '-'
                 table_data.append([
                     scan.wallet_name[:15],
                     scan.chain.upper(),
+                    f"{native.balance:.4f} {native.symbol}",
+                    f"${native.value_usd:.2f}" if native.value_usd else "$0.00",
+                    token_str[:40],
                     f"${scan.total_value_usd:.2f}",
-                    len(scan.tokens),
-                    f"{scan.native_balance.balance:.4f} {scan.native_balance.symbol}"
                 ])
                 total_value += scan.total_value_usd
-        
-        headers = ['Wallet', 'Chain', 'Wert (USD)', 'Tokens', 'Native']
+
+        headers = ['Wallet', 'Chain', 'Native Balance', 'Native USD', 'Tokens', 'Gesamt USD']
         print(tabulate(table_data, headers=headers, tablefmt='grid'))
-        print(f"\n💰 Gesamtwert gefundener Assets: ${total_value:.2f}")
+        print(f"\n💰 Gesamtwert aller Assets: ${total_value:.2f}")
 
 if __name__ == "__main__":
     scanner = WalletScanner()
